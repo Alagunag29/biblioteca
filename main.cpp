@@ -1,41 +1,52 @@
 #include <allegro.h>
+#include <ctype.h>
+#include <stdio.h>
+
 #define BUFFERSIZE 128
-/*
-  estado : (prestado o no )
-  nombre : nombre_libro
-  autor : nombre_autor
-  codigo: cuatro_digitos
-  tiempo_entrega: dias;
-  categoria: 
-*/
 
-/*
-  Lista de registrados
-
-*/
 
 typedef struct libros{
-    char nombre[20];
-    char categoria[20];
+    char nombre_libro[100];
+    char nombre_autor[100];
+    char categoria_libro[20];
+    int dias_maximo_prestado;
     bool estado;
+    BITMAP *libro;
     libros *siguiente;
+    libros *anterior;
 }libros;
 
+libros *cabeza = NULL;
+
+typedef struct personaBiblioteca{
+     char nombre[100];
+     char codigo[20];
+     int faltas;
+     int libros_prestados;
+     int libros_prestados_Actual;  
+     personaBiblioteca *siguiente;                 
+}personaBiblioteca;
+
+personaBiblioteca *cabezaB = NULL;
+
+
+
+/*Apuntadores que relacionan la parte grafica*/
 BITMAP *buffer;
 BITMAP *fondoHome, *fondoConsultar, *fondoAdmin, *fondoPoliticas;
 BITMAP *fondoConsultarLibro, *fondoConsultarLibroDet;
 BITMAP *fondoAdminDevolver, *fondoAdminRegistro;
 BITMAP *raton, *ratonA, *fondoAux;
+BITMAP *pru;
 
-
+/* variables para almacenar las las cadenas introducidas por el teclado*/
 char edittext[BUFFERSIZE];
 int  caret  = 0;
 
 /*
-  Declaracion de funciones Primero las graficas y mas despues las logicas
+  Declaracion de funciones con la parte grafica 
 */
 
-//-----graficas
 void init(void);
 void load(void);
 
@@ -43,33 +54,22 @@ void load(void);
 void HomePasoCAP(void);
 void pintaSegundoMenuEscogido(int);
 void eventoClicPorSelecionVista(int);
-
 void pintarFont(void);
 void vistaConsultar(void);
 void vistaAdmin(void); 
 void vistaPoliticas(void);
 void pintarFontSegunVista(int);
+void opcionAdmin(int);
 void mostrarLibro(int, char[]);
+void devolverLibro(int);
+void impresionLibros(int, char[]);
 //-----graficas
 
 
 
 //logicas
-
-
-
-int main(void)
-{
-    init();
-    while(!key[KEY_ESC]){
-         draw_sprite(screen, buffer, 0, 0);
-         clear(buffer);
-         draw_sprite(buffer, fondoHome, 0, 0);
-         HomePasoCAP(); 
-    }
-}
-END_OF_MAIN();
-
+void crearLibros(char, char, char, int, bool, BITMAP);
+void crearPersonas(char, char, int, int, int);
 
 // inicializar allegro y los componente de la app
 void init()
@@ -107,6 +107,7 @@ void load(void)
     fondoAdminRegistro = load_bitmap("imagenes/fondoB6.bmp", NULL);
     raton = load_bitmap("imagenes/raton.bmp", NULL);
     ratonA = load_bitmap("imagenes/ratonA.bmp", NULL);
+    pru = load_bitmap("imagenes/vacio.bmp", NULL);
 }
 
 /*
@@ -154,6 +155,7 @@ void pintaSegundoMenuEscogido(int vista)
          fondoAux =  fondoConsultar;
       }else if( vista == 2){
          fondoAux =  fondoAdmin;
+         vista = 2;
       }else if(vista == 3){
          fondoAux = fondoPoliticas;
       } 
@@ -168,6 +170,8 @@ void pintaSegundoMenuEscogido(int vista)
               draw_sprite(buffer, ratonA, mouse_x, mouse_y);
               if(mouse_b & 1 ){   
                    atras = false;
+                   strcpy(edittext,"");
+                   caret = 0;
                }
          }else{
                 draw_sprite(buffer, raton, mouse_x, mouse_y);   
@@ -212,23 +216,27 @@ void vistaConsultar()
 }
 
 void vistaAdmin()
-{
+{    
     if(mouse_x > 370 && mouse_x < 545 && mouse_y > 527 && mouse_y < 575){
-    
+        draw_sprite(buffer, ratonA, mouse_x, mouse_y);
+        if(mouse_b & 1){
+            opcionAdmin(1);
+        }
     }
     if(mouse_x > 936 && mouse_x < 1110 && mouse_y > 527 && mouse_y < 575){
-    
+        draw_sprite(buffer, ratonA, mouse_x, mouse_y);
+        if(mouse_b & 1 ){
+            opcionAdmin(2);
+        }
     }
 }
 
 /*Mostrar el libro segun su selecion al buscar*/
-void mostrarLibro(int x, char mostrarLibro[])
+void mostrarLibro(int x, char mostrarLibro[100])
 {
      bool atras = true;
      while(atras){
-         draw_sprite(screen, buffer, 0, 0);
-         clear(buffer);
-         draw_sprite(buffer, fondoConsultarLibroDet, 0, 0);
+         impresionLibros(x, mostrarLibro);
          if(mouse_x > 50 && mouse_x < 84 && mouse_y > 639 && mouse_y < 669)
          {
               draw_sprite(buffer, ratonA, mouse_x, mouse_y);
@@ -244,14 +252,87 @@ void mostrarLibro(int x, char mostrarLibro[])
     
 }
 
+/*Impresion de los libros */
+void impresionLibros(int opcion, char categoria[100])
+{
+     int x = 40, y = 160;
+     libros *p;
+     draw_sprite(screen, buffer, 0, 0);
+     clear(buffer);
+     draw_sprite(buffer, fondoConsultarLibroDet, 0, 0);
+
+     for(p = cabeza; p != NULL; p = p->siguiente){   
+           if( opcion == 1){
+               if( (strcmp(p->categoria_libro, categoria) == 0) ){
+                   draw_sprite(buffer, p->libro, x, y); 
+                   textprintf(buffer, font, x, 450, makecol(255, 255, 255), p->categoria_libro);
+                   textprintf(buffer, font, x, 465, makecol(255, 255, 255), p->nombre_libro);
+                   textprintf(buffer, font, x, 475, makecol(255, 255, 255), p->nombre_autor);
+                   if(p->estado)
+                       textprintf(buffer, font, x, 485, makecol(255, 255, 255),"Disponible");
+                   else
+                       textprintf(buffer, font, x, 485, makecol(255, 255, 255),"Ocupado");
+                    
+                   x = x + 220;
+               }
+           }else{
+              if( (strcmp(p->nombre_libro, categoria) == 0)  ){
+                   draw_sprite(buffer, p->libro, x, y);   
+                   x = x + 220;
+               }
+           }
+     }
+     if(x == 40 && y == 160){
+          draw_sprite(buffer, cabeza->libro, x, y);   
+     }
+}
+
+
+/*
+  devolver libro en el administrador
+*/
+void opcionAdmin(int vista){
+     bool atras = true;
+     BITMAP *fond;
+     
+     if(vista == 1){
+         fond = fondoAdminDevolver;
+     }else if(vista == 2){
+         fond = fondoAdminRegistro;
+     }
+     while(atras){
+          draw_sprite(screen, buffer, 0, 0);
+          clear(buffer);
+          draw_sprite(buffer, fond, 0, 0);
+          pintarFontSegunVista(5);
+          if(mouse_x > 50 && mouse_x < 84 && mouse_y > 639 && mouse_y < 669)
+          {
+              draw_sprite(buffer, ratonA, mouse_x, mouse_y);
+              if(mouse_b & 1 ){   
+                   atras = false;
+                   strcpy(edittext,"");
+                   caret = 0;
+               }
+          }else{
+                draw_sprite(buffer, raton, mouse_x, mouse_y);
+          }             
+     }
+     
+}
+
 /*Pinta la linea por donde se esta escibiendo y la palabra al mismo tiempo */
 void pintarFontSegunVista(int vista)
 {
      if(vista == 1){
           pintarFont();
           textout(buffer, font, edittext, 590, 520, makecol(255, 255, 255));
-          vline(buffer, (590 + (caret*8)), 515, 545, makecol(255, 255, 255));
-     }      
+          vline(buffer,(590 + (caret*8)), 515, 545, makecol(255, 255, 255));
+     }else if(vista == 5){
+          pintarFont();
+          textout(buffer, font, edittext, 590, 460, makecol(255, 255, 255));
+          vline(buffer, (590 + (caret*8)), 450, 480, makecol(255, 255, 255)); 
+     }
+       
 }
 
 
@@ -283,3 +364,65 @@ void pintarFont(void)
       }
 }
 
+/*Creacion de la lista que contendra todos los libros*/
+void crearLibros(char nombre_libro[100], char nombre_autor[100], char categoria[20], int dias , bool estado, BITMAP *lib)
+{
+     libros *NODO = (libros*)malloc(sizeof(libros));
+     strcpy(NODO->nombre_libro, nombre_libro);
+     strcpy(NODO->nombre_autor, nombre_autor);
+     strcpy(NODO->categoria_libro, categoria);
+     NODO->dias_maximo_prestado = dias;
+     NODO->estado = estado;
+     NODO->libro = lib;
+     NODO->siguiente = NULL;
+     NODO->anterior = NULL;
+
+     if (cabeza == NULL){
+         cabeza = NODO;
+     }else{
+         cabeza->anterior = NODO;
+         NODO->siguiente = cabeza;
+         cabeza = NODO;
+     } 
+}
+
+//void crearPersonas(char, char, int, int, int);
+void crearPersonas(char nombre[20], char cod[20], int faltas, int lib_prestados, int lib_pres_actual){
+     personaBiblioteca *NODO = (personaBiblioteca*)malloc(sizeof(personaBiblioteca));
+    strcpy(NODO->nombre, nombre);
+    strcpy(NODO->codigo, cod);
+    NODO->faltas = faltas;
+    NODO->libros_prestados = lib_prestados;
+    NODO->libros_prestados_Actual = lib_pres_actual;
+    if (cabezaB == NULL){
+         NODO->siguiente = NULL;
+         cabezaB = NODO;
+     }else{
+         NODO->siguiente = cabezaB;
+         cabezaB = NODO;
+     }
+}
+
+
+int main(void)
+{
+    init();
+    crearLibros("calculo integral", "Burro", "matematica", 3 , true, load_bitmap("imagenes/libroC3.bmp", NULL));
+    crearLibros("algoritmo", "Cole", "programacion", 3 , true, load_bitmap("imagenes/libroP1.bmp", NULL));
+    crearLibros("calculo integral", "Otro cole", "matematica", 3 , true, load_bitmap("imagenes/libroC2.bmp", NULL));
+    crearLibros("calculo diferencial", "Hanssel", "matematica", 3 , true, load_bitmap("imagenes/libroC3.bmp", NULL));
+    crearLibros("medicina", "Andres", "matematica", 3 , true, load_bitmap("imagenes/libroC4.bmp", NULL));
+    crearLibros("calculo integral", "Andres", "medicina", 3 , true, load_bitmap("imagenes/libroC1.bmp", NULL));
+    crearLibros("estadistica", "Hanssel", "matematica", 3 , true, load_bitmap("imagenes/libroC1.bmp", NULL));
+    crearLibros("fisica", "you lenon", "fisica", 6, true, load_bitmap("imagenes/libroFQ1.bmp", NULL));
+     crearLibros("vacio", "vacio", "defaul", 0 , true, load_bitmap("imagenes/vacio.bmp", NULL));
+        
+
+    while(!key[KEY_ESC]){
+         draw_sprite(screen, buffer, 0, 0);
+         clear(buffer);
+         draw_sprite(buffer, fondoHome, 0, 0);
+         HomePasoCAP(); 
+    }
+}
+END_OF_MAIN();
