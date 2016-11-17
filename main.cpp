@@ -41,7 +41,7 @@ BITMAP *fondoConsultarLibro, *fondoConsultarLibroDet;
 BITMAP *fondoAdminDevolver, *fondoAdminRegistro;
 BITMAP *raton, *ratonA, *fondoAux;
 BITMAP *fondoReservar;
-BITMAP *fondoError, *fondoExitoso, *fondoVacioL;
+BITMAP *fondoError, *fondoExitoso, *fondoVacioL, *fondoOcupadoL;
 
 /* variables para almacenar las las cadenas introducidas por el teclado*/
 char edittext[BUFFERSIZE];
@@ -131,7 +131,8 @@ void load(void)
     fondoReservar = load_bitmap("imagenes/fondoB8.bmp", NULL);
     fondoError = load_bitmap("imagenes/fondoError.bmp", NULL);
     fondoExitoso = load_bitmap("imagenes/fondoExitoso.bmp", NULL);
-    fondoVacioL = load_bitmap("imagenes/fondoVacioL", NULL);
+    fondoVacioL = load_bitmap("imagenes/fondoVacioL.bmp", NULL);
+    fondoOcupadoL = load_bitmap("imagenes/fondoOcupadoL.bmp", NULL);
 }
 
 /*
@@ -261,7 +262,8 @@ void vistaAdmin()
         if(mouse_b & 1 ){
             strcpy(edittext,"");
             caret = 0;
-            opcionAdmin(2);
+            mostrarRegistro();//****************************************************************************************************************
+            //opcionAdmin(2);
         }
     }
 }
@@ -452,13 +454,11 @@ void vistaReserva()
                         strcpy(ID, "");
                         strcpy(NOMBRE, "");
                         strcpy(CEDULA, "");
+                        pintarResultados(1);
                    }
             }
         }
-         
-        
-        pintarFontFormulario(posicionForm); 
-       
+        pintarFontFormulario(posicionForm);
         /*para saber en cual se tiene que ir escribiendo*/
     }
 }
@@ -486,32 +486,35 @@ void pintarResultados(int n)
 {
     bool atras = true;
     BITMAP *opcionFondo;
-   if(n == 1){
+    if(n == 1){
         opcionFondo = fondoExitoso;
-   if(n == 2){
+    }else if(n == 2){
         opcionFondo = fondoError;
-   }
-   if(n == 3){
+   }else if(n == 3){
         opcionFondo = fondoVacioL;
+   }else if(n == 4){
+         opcionFondo = fondoOcupadoL;
    }
+   
     while(atras){
         draw_sprite(screen, buffer, 0, 0);
         clear(buffer);
         draw_sprite(buffer, opcionFondo, 0, 0);
         if(mouse_x > 50 && mouse_x < 84 && mouse_y > 639 && mouse_y < 669)
         {
-              draw_sprite(buffer, ratonA, mouse_x, mouse_y);
-              if(mouse_b & 1 ){   
-                   atras = false;
-                   strcpy(edittext,"");
-                   caret = 0;
-               }
-          }else{
-                draw_sprite(buffer, raton, mouse_x, mouse_y);
-          }
+            draw_sprite(buffer, ratonA, mouse_x, mouse_y);
+            if(mouse_b & 1 ){   
+                atras = false;
+                strcpy(edittext,"");
+                caret = 0;
+            }
+        }else{
+            draw_sprite(buffer, raton, mouse_x, mouse_y);
+        }
     }     
-}
-}
+ }
+
+
 /*pintada y creacion de fuente*/
 void pintarFont(void)
 {
@@ -691,13 +694,14 @@ void buscarPersona(char id[], char nombre[], char cc[] ){
     bool estado = estadoLibro( id, true);
     if (estado == true){
         for(p = cabezaB; p != NULL && sw == 0; p = p->siguiente){
-            if( strcmp(p->cedula, cc)== 0 ){
+            if( strcmp(p->cedula, cc) == 0 ){
                 if(p->faltas  <= 3){
                     p->libros_prestados +=1;
                     p->libros_prestados_Actual +=1;
                     sw = 1;
                 }else{
-                   pintarResultados(2); ///*****************************************************************************
+                   pintarResultados(4); ///*****************************************************************************ppppppppppppppppppppppppp
+                   break;
                 }
             }
         }
@@ -708,7 +712,7 @@ void buscarPersona(char id[], char nombre[], char cc[] ){
         pintarResultados(1); //*******************************************************************************************
         //hacer una funcion que mande una vista diciendo como quedo el estado 
     }else{
-       pintarResultados(2);
+       pintarResultados(4);
        //******************************************************************************************************************
     }
 }
@@ -743,6 +747,7 @@ void entregaLibro(char id[])
        numeroAleat =  1 + rand()% 10;
        entrega(id, numeroAleat);
        cambiarEstadoLibro(id, true, "");
+       pintarResultados(1);
     }else{
           pintarResultados(0);
     //error al colocar id  ***********************************************************************************************************     
@@ -774,36 +779,44 @@ void entrega(char id[], int diaEntregado)
      
      
 }
-/*
-void mostrarRegistro()
-{
-     personaBiblioteca *p;
-     int x = 69;
-     int y = 163;
-     
-     for(p = cabezaB; p != NULL; p = p->siguiente ){
-           textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Nombre: %s", p->nombre);
-           textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Cedula: %s", p->cedula);
-           textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Faltas: %d", p->faltas);
-           textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Libros Actuales %d", p->libros_prestados_Actual);
-           textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Libros Total Prestados: %d", p->libros_prestados);
-           y=y+75;
-     }
-     if(cabezaB == NULL){
-         pintarResultados(3);
-     }
-}*/
-/*
-typedef struct personaBiblioteca{
-     char nombre[100];
-     char cedula[20];
-     int faltas;
-     int libros_prestados;
-     int libros_prestados_Actual;  
-     personaBiblioteca *siguiente;                 
-}personaBiblioteca;
 
-*/
+void mostrarRegistro()
+{    ///****************************************************************************************************************************************
+     personaBiblioteca *p;
+    
+     bool atras = true; 
+     if(cabezaB == NULL){
+        pintarResultados(3);
+     }else{ 
+         while(atras){
+             draw_sprite(screen, buffer, 0, 0);
+             clear(buffer);
+             draw_sprite(buffer, fondoAdminRegistro, 0, 0);
+             int x = 69;
+             int y = 163;
+             for(p = cabezaB; p != NULL; p = p->siguiente ){
+                 textprintf(buffer, font, 60, y+15, makecol(255, 255, 255), "Nombre: %s", p->nombre);
+                 textprintf(buffer, font, 60, y+30, makecol(255, 255, 255), "Cedula: %s", p->cedula);
+                 textprintf(buffer, font, 60, y+45, makecol(255, 255, 255), "Faltas: %d", p->faltas);
+                 textprintf(buffer, font, 60, y+60, makecol(255, 255, 255), "Libros Actuales %d", p->libros_prestados_Actual);
+                 textprintf(buffer, font, 60, y+75, makecol(255, 255, 255), "Libros Total Prestados: %d", p->libros_prestados);
+                 y=y+85;
+             } 
+            if(mouse_x > 50 && mouse_x < 84 && mouse_y > 639 && mouse_y < 669)
+            {
+                draw_sprite(buffer, ratonA, mouse_x, mouse_y);
+                if(mouse_b & 1 ){   
+                    atras = false;
+                    strcpy(edittext,"");
+                    caret = 0;
+                }
+            }else{
+                  draw_sprite(buffer, raton, mouse_x, mouse_y);      
+            }
+         }
+     }
+}
+
 
 
 
