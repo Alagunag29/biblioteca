@@ -318,10 +318,11 @@ void impresionLibros(int opcion, char categoria[100])
                    textprintf(buffer, font, x, 465, makecol(255, 255, 255), "Categoria: %s", p->categoria_libro);
                    textprintf(buffer, font, x, 480, makecol(255, 255, 255), "Titulo: %s", p->nombre_libro);
                    textprintf(buffer, font, x, 495, makecol(255, 255, 255), "Autor: %s", p->nombre_autor);
+                   textprintf(buffer, font, x, 510, makecol(255, 255, 255), "Dias: %d", p->dias_maximo_prestado);
                    if(p->estado)
-                       textprintf(buffer, font, x, 510, makecol(255, 255, 255),"Estado: Disponible");
+                       textprintf(buffer, font, x, 525, makecol(255, 255, 255),"Estado: Disponible");
                    else
-                       textprintf(buffer, font, x, 510, makecol(255, 255, 255),"Estado: Ocupado");
+                       textprintf(buffer, font, x, 525, makecol(255, 255, 255),"Estado: Ocupado");
                    x = x + 250;
                }
            }else{
@@ -331,10 +332,11 @@ void impresionLibros(int opcion, char categoria[100])
                    textprintf(buffer, font, x, 465, makecol(255, 255, 255), "Categoria: %s", p->categoria_libro);
                    textprintf(buffer, font, x, 480, makecol(255, 255, 255), "Titulo: %s", p->nombre_libro);
                    textprintf(buffer, font, x, 495, makecol(255, 255, 255), "Autor: %s", p->nombre_autor);
+                   textprintf(buffer, font, x, 510, makecol(255, 255, 255), "Dias: %d", p->dias_maximo_prestado);
                    if(p->estado)
-                       textprintf(buffer, font, x, 510, makecol(255, 255, 255),"Estado: Disponible");
+                       textprintf(buffer, font, x, 525, makecol(255, 255, 255),"Estado: Disponible");
                    else
-                       textprintf(buffer, font, x, 510, makecol(255, 255, 255),"Estado: Ocupado");   
+                       textprintf(buffer, font, x, 525, makecol(255, 255, 255),"Estado: Ocupado");   
                    x = x + 220;
                }
            }
@@ -744,16 +746,18 @@ void entregaLibro(char id[])
     bool estado = estadoLibro(id, false);
     if (estado){
        srand(time(0));
-       numeroAleat =  1 + rand()% 10;
+       numeroAleat =  1 + rand()% 7;
+       allegro_message("%d ",numeroAleat);
        entrega(id, numeroAleat);
        cambiarEstadoLibro(id, true, "");
        pintarResultados(1);
     }else{
-          pintarResultados(0);
+          pintarResultados(2);
     //error al colocar id  ***********************************************************************************************************     
     }
 }
 
+/**/
 void entrega(char id[], int diaEntregado)
 {
      char cc_usuario;
@@ -769,11 +773,14 @@ void entrega(char id[], int diaEntregado)
           }
      }
      for(j = cabezaB; j != NULL; j = j->siguiente){
-         if(j->cedula, p->id_usuario){
-             j->libros_prestados_Actual-=1;
-             if(diasMax > diaEntregado){
+         if( strcmp(j->cedula, p->id_usuario)== 0){
+             if(j->libros_prestados_Actual > 0){
+                j->libros_prestados_Actual-=1;
+             }
+             if(diasMax < diaEntregado){
                 j->faltas+=1;
              }
+             break;
          }
      }
      
@@ -818,19 +825,26 @@ void mostrarRegistro()
 }
 
 
-
-
 int main(void)
 {
     init();
-    crearLibros("calculo integral", "Burro", "matematica", "123", 3 , true, load_bitmap("imagenes/libroC3.bmp", NULL));
-    crearLibros("algoritmo", "Cole", "programacion","1234" ,  3 , true, load_bitmap("imagenes/libroP1.bmp", NULL));
-    crearLibros("calculo integral", "Otro cole", "matematica", "12345", 3 , true, load_bitmap("imagenes/libroC2.bmp", NULL));
-    crearLibros("calculo diferencial", "Hanssel", "matematica", "123456", 3 , true, load_bitmap("imagenes/libroC3.bmp", NULL));
-    crearLibros("medicina", "Andres", "matematica", "1234567", 3 , true, load_bitmap("imagenes/libroC4.bmp", NULL));
-    crearLibros("calculo integral", "Andres", "medicina", "321", 3 , true, load_bitmap("imagenes/libroC1.bmp", NULL));
-    crearLibros("estadistica", "Hanssel", "matematica", "1212", 3 , true, load_bitmap("imagenes/libroC1.bmp", NULL));
-    crearLibros("fisica", "you lenon", "fisica", "ew11", 6, true, load_bitmap("imagenes/libroFQ1.bmp", NULL));
+    crearLibros("calculo integral", "Alber", "matematica", "0001", 3 , true, load_bitmap("imagenes/libroC1.bmp", NULL));
+    crearLibros("calculo diferencial", "Gouss", "matematica","0011" ,  3 , true, load_bitmap("imagenes/libroC2.bmp", NULL));
+    crearLibros("analisis y D.G", "Bernan", "matematica", "0111", 3 , true, load_bitmap("imagenes/libroC3.bmp", NULL));
+    crearLibros("algebra elemental", "Gouss", "matematica", "1111", 3 , true, load_bitmap("imagenes/libroC4.bmp", NULL));
+    crearLibros("algebra de baldor", "Baldor", "matematica", "1000", 3 , true, load_bitmap("imagenes/libroC5.bmp", NULL));
+    crearLibros("contabilidad general", "euder", "finanzas", "0002", 5 , true, load_bitmap("imagenes/libroF1.bmp", NULL));
+    crearLibros("estadistica y P", "gutierrez", "finanzas", "0022", 6 , true, load_bitmap("imagenes/libroF2.bmp", NULL));
+    crearLibros("estadistica basica", "you lenon", "finanzas", "0222", 6, true, load_bitmap("imagenes/libroF3.bmp", NULL));
+    crearLibros("contabilidad F", "gonzales", "finanzas", "2222", 7 , true, load_bitmap("imagenes/libroF4.bmp", NULL));
+    crearLibros("fundamentos de F", "lenison", "fisica y quimica", "0003", 2 , true, load_bitmap("imagenes/libroFQ1.bmp", NULL));    
+    crearLibros("quimica cuantica", "danilson", "fisica y quimica", "0033", 3 , true, load_bitmap("imagenes/libroFQ2.bmp", NULL));
+    crearLibros("quimica inorganica", "lawe", "fisica y quimica", "0333", 4 , true, load_bitmap("imagenes/libroFQ3.bmp", NULL));
+    crearLibros("quimica organica", "deltin", "fisica y quimica", "3333", 2 , true, load_bitmap("imagenes/libroFQ4.bmp", NULL));
+    crearLibros("fundamentos de P", "chavez", "programacion", "0004", 2 , true, load_bitmap("imagenes/libroP1.bmp", NULL));
+    crearLibros("bases de datos", "lane", "programacion", "0044", 4 , true, load_bitmap("imagenes/libroP2.bmp", NULL));
+    crearLibros("estructura de datos", "werlin", "programacion", "0444", 3 , true, load_bitmap("imagenes/libroP3.bmp", NULL));
+    crearLibros("programacion en C", "raniel", "programacion", "4444", 5 , true, load_bitmap("imagenes/libroP4.bmp", NULL));
     crearLibros("vacio", "vacio", "defaul", "dsd2", 0 , true, load_bitmap("imagenes/vacio.bmp", NULL));
     
 
